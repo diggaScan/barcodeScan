@@ -1,4 +1,4 @@
-# BarcodeScan_creation
+# Barcode_creation
 This is a repository aiming to provide some custom features.
 
 ## create_QRCode
@@ -9,6 +9,7 @@ The easiest way to use this library is
         try {
             qrCodeEncoder = new QRCodeEncoder(this, "hello", 500, Contents.Type.TEXT);
             Bitmap bitmap = qrCodeEncoder.encodeAsBitmap();
+           // Bitmap bitmap = qrCodeEncoder.encodeAsBitmap(filePath);//store this bitmap into a file as a PNG
             if (bitmap == null) {
                 qrCodeEncoder = null;
                 return;

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">qrencoder</string>
+    <string name="title_activity_a">aActivity</string>
+    <string name="title_activity_m">MActivity</string>
+</resources>

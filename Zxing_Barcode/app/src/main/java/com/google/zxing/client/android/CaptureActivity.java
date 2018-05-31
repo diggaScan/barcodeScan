@@ -46,9 +46,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.DecodeHintType;
@@ -66,6 +64,7 @@ import com.google.zxing.client.android.result.ResultHandlerFactory;
 import com.google.zxing.client.android.result.supplement.SupplementalInfoRetriever;
 import com.google.zxing.client.android.share.ShareActivity;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.util.Collection;
@@ -90,6 +89,10 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   private static final String[] ZXING_URLS = { "http://zxing.appspot.com/scan", "zxing://scan/" };
 
   private static final int HISTORY_REQUEST_CODE = 0x0000bacc;
+
+  public final static String GET_CONTENT="get_content";
+  public final static String GET_IMAGE="get_image";
+  public final static int RESULT_GET=1;
 
   private static final Collection<ResultMetadataType> DISPLAYABLE_METADATA_TYPES =
       EnumSet.of(ResultMetadataType.ISSUE_NUMBER,
@@ -118,8 +121,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   private AmbientLightManager ambientLightManager;
   android.hardware.Camera camera;
   boolean isOpen=false;
-  private SeekBar seek_zoom;
-  private int max_zoom;
 
   ViewfinderView getViewfinderView() {
     return viewfinderView;
@@ -162,25 +163,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         }
       }
     });
-    seek_zoom=(SeekBar)findViewById(R.id.zoom);
-    seek_zoom.setMax(100);
-    seek_zoom.setVerticalScrollBarEnabled(true);
-    seek_zoom.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-      @Override
-      public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        camera.getParameters().setZoom(max_zoom*progress/100);
-      }
 
-      @Override
-      public void onStartTrackingTouch(SeekBar seekBar) {
-
-      }
-
-      @Override
-      public void onStopTrackingTouch(SeekBar seekBar) {
-
-      }
-    });
 
     PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
   }
@@ -486,40 +469,52 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     lastResult = rawResult;
     ResultHandler resultHandler = ResultHandlerFactory.makeResultHandler(this, rawResult);
 
-    boolean fromLiveScan = barcode != null;
-    if (fromLiveScan) {
-      historyManager.addHistoryItem(rawResult, resultHandler);
-      // Then not from history, so beep/vibrate and we have an image to draw on
-      beepManager.playBeepSoundAndVibrate();
-      drawResultPoints(barcode, scaleFactor, rawResult);
-    }
+    //add the logic of activity startActivityForResult();
+    Log.d("info","start to gather info");
+    Intent intent=new Intent();
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    barcode.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+    byte[] datas = baos.toByteArray();
+    intent.putExtra(GET_CONTENT,resultHandler.getDisplayContents());
+    intent.putExtra(GET_IMAGE,datas);
+    this.setResult(RESULT_GET,intent);
+    finish();
 
-    switch (source) {
-      case NATIVE_APP_INTENT:
-      case PRODUCT_SEARCH_LINK:
-        handleDecodeExternally(rawResult, resultHandler, barcode);
-        break;
-      case ZXING_LINK:
-        if (scanFromWebPageManager == null || !scanFromWebPageManager.isScanFromWebPage()) {
-          handleDecodeInternally(rawResult, resultHandler, barcode);
-        } else {
-          handleDecodeExternally(rawResult, resultHandler, barcode);
-        }
-        break;
-      case NONE:
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        if (fromLiveScan && prefs.getBoolean(PreferencesActivity.KEY_BULK_MODE, false)) {
-          Toast.makeText(getApplicationContext(),
-                         getResources().getString(R.string.msg_bulk_mode_scanned) + " (" + rawResult.getText() + ')',
-                         Toast.LENGTH_SHORT).show();
-          maybeSetClipboard(resultHandler);
-          // Wait a moment or else it will scan the same barcode continuously about 3 times
-          restartPreviewAfterDelay(BULK_MODE_SCAN_DELAY_MS);
-        } else {
-          handleDecodeInternally(rawResult, resultHandler, barcode);
-        }
-        break;
-    }
+
+//    boolean fromLiveScan = barcode != null;
+//    if (fromLiveScan) {
+//      historyManager.addHistoryItem(rawResult, resultHandler);
+//      // Then not from history, so beep/vibrate and we have an image to draw on
+//      beepManager.playBeepSoundAndVibrate();
+//      drawResultPoints(barcode, scaleFactor, rawResult);
+//    }
+//
+//    switch (source) {
+//      case NATIVE_APP_INTENT:
+//      case PRODUCT_SEARCH_LINK:
+//        handleDecodeExternally(rawResult, resultHandler, barcode);
+//        break;
+//      case ZXING_LINK:
+//        if (scanFromWebPageManager == null || !scanFromWebPageManager.isScanFromWebPage()) {
+//          handleDecodeInternally(rawResult, resultHandler, barcode);
+//        } else {
+//          handleDecodeExternally(rawResult, resultHandler, barcode);
+//        }
+//        break;
+//      case NONE:
+//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+//        if (fromLiveScan && prefs.getBoolean(PreferencesActivity.KEY_BULK_MODE, false)) {
+//          Toast.makeText(getApplicationContext(),
+//                         getResources().getString(R.string.msg_bulk_mode_scanned) + " (" + rawResult.getText() + ')',
+//                         Toast.LENGTH_SHORT).show();
+//          maybeSetClipboard(resultHandler);
+//          // Wait a moment or else it will scan the same barcode continuously about 3 times
+//          restartPreviewAfterDelay(BULK_MODE_SCAN_DELAY_MS);
+//        } else {
+//          handleDecodeInternally(rawResult, resultHandler, barcode);
+//        }
+//        break;
+//    }
   }
 
   /**
@@ -576,6 +571,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       resultHandler.handleButtonPress(resultHandler.getDefaultButtonID());
       return;
     }
+
+
 
     statusView.setVisibility(View.GONE);
     viewfinderView.setVisibility(View.GONE);
@@ -764,7 +761,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     try {
       cameraManager.openDriver(surfaceHolder);
       camera=cameraManager.camera.getCamera();
-      max_zoom=camera.getParameters().getMaxZoom();
       // Creating the handler starts the preview, which can also throw a RuntimeException.
       if (handler == null) {
         handler = new CaptureActivityHandler(this, decodeFormats, decodeHints, characterSet, cameraManager);

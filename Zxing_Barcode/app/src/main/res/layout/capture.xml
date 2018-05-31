@@ -199,12 +199,7 @@
       android:background="@drawable/ic_highlight_black_24dp"
       android:layout_marginTop="80dp"
       android:layout_gravity="center"/>
-  <SeekBar
-      android:id="@+id/zoom"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_gravity="center"
-      android:layout_marginTop="200dp" />
+
 
   <TextView android:id="@+id/status_view"
             android:layout_width="wrap_content"

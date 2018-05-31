@@ -35,3 +35,7 @@ reorder the multiple barcode reader, put orcode at the begining.
 
 ## modified 3:
 reconstruct the qrcode encode module.
+
+## modified 4:
+delete the intent filter of capture activity, make it no more launch activity,add custom intent filter(action=com.barcode.SCAN).
+delete the most UI widgets in capture activity.

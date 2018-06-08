@@ -24,6 +24,24 @@ The easiest way to use this library is
 the input params will be a content you may need to show after the decoding, the type of content, and the dimension of QRCode you may want to create.
 # Zxingbarcode
 basing on the original zxing library,several feature has been modified and more suitable for applying in the application
+
+## how to use?
+
+       button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setAction("com.barcode.SCAN");
+                startActivityForResult(intent, 0);
+            }
+            //get the result from intent,useing CaptureActivity.GET_CONTENT and CaptureActivity.GET_IMAGE to gain relating data.
+            
+              @Override
+        protected void onActivityResult ( int requestCode, int resultCode, Intent data){
+            super.onActivityResult(requestCode, resultCode, data);
+           textView.setText(data.getStringExtra(CaptureActivity.GET_CONTENT));
+        }
+            
 ## modified 1:  
 change the screen orientation to potrait and adjust the preview size with screen. 
 
